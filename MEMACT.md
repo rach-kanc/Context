@@ -1,100 +1,155 @@
 # Memact Contributor Handoff
 
-Memact is a playground where apps personalize using context the user can actually see and control.
+Memact is a place where users can finally see what apps know about them.
 
-It is still a playground, even if the old Playground repo is no longer the main place to contribute.
-
-The current playground is Schema: app categories, context shapes, examples, prompts, and tests.
+Apps can bring context. Users decide what stays, what changes, and what gets removed.
 
 The short version:
 
-Apps send context. App categories give it shape. Wiki gives users control.
+```text
+Apps send context -> Categories shape it -> Wiki lets users control it -> Memory stores what survives
+```
 
 ## The idea
 
-Most apps personalize quietly. They guess from clicks, isolated profiles, and hidden assumptions.
+Most apps build a private version of the user.
 
-Memact does something different. Apps can send or propose context, but the user gets a Wiki where that context can be reviewed, edited, rejected, deleted, or shared.
+They learn from clicks, searches, orders, playlists, watch history, saved items, skipped items, and repeated habits. The user usually cannot see that profile clearly. They cannot clean it up. They cannot move it to another app. They just get whatever personalization the app decides to give them.
 
-So if a music app notices a user keeps replaying Brazilian phonk, it should not secretly build a weird hidden profile and call it intelligence.
+Memact flips that.
 
-It can propose something readable:
+Apps can propose context, but the user gets a Wiki where that context can be reviewed, edited, rejected, deleted, or shared.
 
-"Prefers Brazilian phonk, especially high-energy tracks."
+Example:
 
-The user can accept it, edit it, or reject it.
+A music app might notice:
 
-## What contributors do now
+```text
+User replayed Brazilian phonk playlists 18 times this month and skipped slow acoustic playlists.
+```
 
-Contributors are not expected to build random generic features.
+The app should not turn that into some hidden permanent profile.
 
-Pick an app category and define how context should work there.
+It can propose a readable entry:
 
-Examples:
+```text
+Prefers high-energy Brazilian phonk.
+```
+
+The user can accept it, reject it, or edit it:
+
+```text
+I like Brazilian phonk mostly while working out.
+```
+
+That edited user version is stronger than the app guess.
+
+## What contributors do in Schema
+
+Schema is the main beginner-friendly contribution path.
+
+You pick an app category and define how context should work there.
+
+Good category examples:
 
 - music
 - video-streaming
-- movie-booking
 - shopping
 - learning
-- news-articles
-- fitness
 - travel
 - food-delivery
+- news-articles
 - creator-tools
 - productivity
 - AI assistants
 
-For each category, contributors can add:
+For each category, add:
 
 - useful context fields
-- messy app context examples
-- expected Wiki outputs
-- simple normalization rules
-- user-facing entry templates
-- prompts for missing context
-- access suggestions
-- tests
+- raw app input examples
+- normalized output examples
+- user-facing Wiki entry templates
+- fields that need extra care
+- category-level permission suggestions
+- basic tests
 
-## Example: music apps
+Do not build random features. Keep the PR focused on one category.
 
-A music app may send:
+## What a good schema should do
 
-"User replayed Brazilian phonk playlists 18 times this month and skipped slow acoustic playlists."
+A good schema should turn messy app activity into clear user-facing context.
 
-A category schema can shape that into:
+It should separate:
 
-"Prefers high-energy Brazilian phonk."
+- stable preferences from temporary intent
+- explicit user choices from weak app guesses
+- useful summaries from raw private data
+- safe personalization context from sensitive inference
 
-But the Wiki is where the user stays in control. The user may edit it to:
+Bad:
 
-"I like Brazilian phonk mostly while working out."
+```text
+User is anxious because they watched productivity videos at night.
+```
 
-That edited user context is stronger than the app guess.
+Better:
 
-## Parts
+```text
+Often watches productivity videos in the evening.
+```
+
+Best, after user edit:
+
+```text
+I prefer productivity content in the evening, especially short practical videos.
+```
+
+## Parts of Memact
 
 - Access handles consent, apps, API keys, scopes, and permissions.
 - Wiki is where users add, edit, approve, reject, delete, and share context.
 - Schema defines app category schemas.
 - Memory stores accepted context, history, retrieval, and app-safe summaries.
-- Contracts defines shared shapes.
-- SDK lets apps connect to Memact.
+- Contracts defines shared shapes and validators.
+- SDK helps apps connect to Memact.
+- Website is the user and developer portal.
 
 ## Rules
 
+- Apps propose context. Users control what becomes memory.
 - Default visibility should be private.
 - Apps should not get full Wiki access.
 - Apps should only get relevant category context with permission.
 - User-added context is stronger than app-proposed context.
 - Important app writes should require approval.
+- Prefer readable summaries over raw personal data.
 - Do not infer sensitive traits.
 - Do not write fake certainty.
 - Keep user-facing copy simple.
-- Do not bring back Capture, Inference, or Intent as core product language.
+- Do not bring back Capture, Inference, or Intent as current product language.
+
+## Contribution path
+
+Start with an issue labeled:
+
+- `SSoC26`
+- `Easy`
+- `good first issue`
+- `schema`
+
+Comment before starting so work does not get duplicated.
+
+Run checks before opening a PR:
+
+```powershell
+npm install
+npm run check
+```
+
+Keep the first PR small. One category, clear examples, basic tests.
 
 ## Best explanation
 
-Memact is a playground for user-controlled app context.
+Memact lets users see, edit, and control the app-generated version of themselves.
 
 Apps bring context. Categories organize it. Wiki keeps the user in charge.
