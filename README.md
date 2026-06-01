@@ -36,7 +36,7 @@ Good first issues are labeled:
 
 Please comment on an issue before starting so work does not get duplicated.
 
-To claim an unassigned SSoC26 issue, comment `/claim` or ask to be assigned. The auto-assign workflow only claims open `Easy` or `Medium` SSoC26 issues that are not already assigned.
+To claim an unassigned SSoC26 issue, comment `/claim`. The auto-assign workflow only claims open `Easy` or `Medium` SSoC26 issues that are not already assigned.
 
 A good category schema contribution should include:
 
