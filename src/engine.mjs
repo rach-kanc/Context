@@ -70,6 +70,33 @@ const LOW_SIGNAL_TERMS = new Set([
   "activity",
 ]);
 
+const MUSIC_FIELD_SPECS = [
+  { output: "favorite_genres", aliases: ["favorite_genres", "preferred_genres", "liked_genres", "genres"] },
+  { output: "disliked_genres", aliases: ["disliked_genres", "skipped_genres", "blocked_genres"] },
+  { output: "frequent_artists", aliases: ["frequent_artists", "repeated_artists", "favorite_artists", "artists"] },
+  { output: "skipped_artists", aliases: ["skipped_artists", "blocked_artists", "ignored_artists"] },
+  { output: "playlist_themes", aliases: ["playlist_themes", "playlist_theme", "mix_theme"] },
+  { output: "listening_moods", aliases: ["listening_moods", "mood_tags", "listening_mood"] },
+  { output: "discovery_preferences", aliases: ["discovery_preferences", "discovery_mode", "new_music_preference"] },
+  { output: "explicit_preferences", aliases: ["explicit_preferences", "direct_preferences", "user_preferences"] },
+];
+
+const MUSIC_SENSITIVE_KEYS = new Set([
+  "inferred_mood",
+  "mood_inference",
+  "mental_health",
+  "health_condition",
+  "diagnosis",
+  "religion",
+  "politics",
+  "sexuality",
+  "gender_identity",
+  "race",
+  "ethnicity",
+  "age",
+  "location",
+]);
+
 const COGNITIVE_DIMENSIONS = {
   action: [
     "apply",
@@ -209,6 +236,7 @@ export function groupByCategory(records = []) {
 export function inferSchemaType(record = {}) {
   const themes = Array.isArray(record.canonical_themes) ? record.canonical_themes : []
   const text = `${record.category || ""} ${themes.join(" ")} ${record.evidence?.title || ""}`.toLowerCase()
+  if (/music|song|playlist|artist|album|track|genre|listening|listen/.test(text)) return "music_preferences"
   if (/reading|article|summary|scroll|finish|completion/.test(text)) return "reading_preferences"
   if (/shop|commerce|product/.test(text)) return "shopping"
   if (/learn|study|tutorial|course/.test(text)) return "learning"
@@ -228,6 +256,7 @@ export function createSchemaPacket(group = [], options = {}) {
   const schemaType = options.schemaType || inferSchemaType(records[0] || {})
   const confidence = round(records.reduce((sum, record) => sum + Number(record.meaningful_score || 0.5), 0) / Math.max(1, records.length))
   const readingAttributes = schemaType === "reading_preferences" ? buildReadingAttributes(records) : {}
+  const musicAttributes = schemaType === "music_preferences" ? buildMusicAttributes(records) : {}
   return {
     schema_version: "memact.schema_packet.v0",
     packet_id: `schema_${slug(`${category}_${schemaType}_${records.length}`)}`,
@@ -238,7 +267,8 @@ export function createSchemaPacket(group = [], options = {}) {
     attributes: {
       record_count: records.length,
       themes: unique(records.flatMap((record) => record.canonical_themes || [])),
-      ...readingAttributes
+      ...readingAttributes,
+      ...musicAttributes
     },
     sources: records.flatMap((record) => record.sources || []),
     created_at: new Date().toISOString()
@@ -247,6 +277,12 @@ export function createSchemaPacket(group = [], options = {}) {
 
 function inferSubSchema(records = []) {
   const text = records.map((record) => `${record.source_label || ""} ${record.evidence?.title || ""} ${(record.canonical_themes || []).join(" ")}`).join(" ").toLowerCase()
+  if (/favorite_genre|preferred_genre|liked_genre|genre/.test(text)) return "music_genre_preference"
+  if (/artist|artist preference|frequent_artist|repeated_artist/.test(text)) return "music_artist_preference"
+  if (/playlist|mix_theme/.test(text)) return "music_playlist_theme"
+  if (/discovery|new music/.test(text)) return "music_discovery_preference"
+  if (/mood|listening mood/.test(text)) return "music_listening_mood"
+  if (/music|song|track|album|playlist|artist|genre/.test(text)) return "music_preferences"
   if (/summary_detail_preference|summary expanded/.test(text)) return "summary_style_preference"
   if (/quick_summary_preference|summary collapsed/.test(text)) return "summary_style_preference"
   if (/long_read|short_read/.test(text)) return "article_length_preference"
@@ -281,6 +317,44 @@ function buildReadingAttributes(records = []) {
     repeat_topics: topics.filter((topic) => records.filter((record) => record.evidence?.article_topic === topic).length > 1),
     engagement_pattern: scrollDepths.some((value) => value >= 75) ? "high_scroll_depth" : scrollDepths.some((value) => value < 35) ? "low_scroll_depth" : "unknown"
   }
+}
+
+function buildMusicAttributes(records = []) {
+  const attributes = {}
+  for (const spec of MUSIC_FIELD_SPECS) {
+    attributes[spec.output] = collectEvidenceValues(records, spec.aliases)
+  }
+
+  const sensitiveFields = unique(records.flatMap((record) => {
+    const evidence = record.evidence || {}
+    return Object.keys(evidence).filter((key) => MUSIC_SENSITIVE_KEYS.has(key) && evidence[key] !== undefined && evidence[key] !== null)
+  }))
+
+  return {
+    ...attributes,
+    sensitive_fields: sensitiveFields,
+    review_status: sensitiveFields.length ? "needs_review" : "safe_to_propose",
+  }
+}
+
+function collectEvidenceValues(records = [], aliases = []) {
+  return unique(records.flatMap((record) => aliases.flatMap((alias) => normalizeEvidenceValue(record.evidence?.[alias])))).filter(Boolean)
+}
+
+function normalizeEvidenceValue(value) {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => normalizeEvidenceValue(item))
+  }
+
+  if (value === null || value === undefined || value === "") {
+    return []
+  }
+
+  if (typeof value === "string") {
+    return value.split(",").map((item) => item.trim()).filter(Boolean)
+  }
+
+  return [String(value)]
 }
 
 export function formatSchemaReport(result) {

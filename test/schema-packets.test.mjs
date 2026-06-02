@@ -68,3 +68,52 @@ test("skipped topics and low scroll depth become reading attributes", () => {
   assert.equal(packet.attributes.skipped_topics[0], "celebrity")
   assert.equal(packet.attributes.engagement_pattern, "low_scroll_depth")
 })
+
+test("music events create music preference packet", () => {
+  const packets = formSchemaPackets([
+    {
+      record_id: "m1",
+      category: "music",
+      meaningful_score: 0.9,
+      canonical_themes: ["music", "favorite_genre", "artist", "playlist_theme", "discovery_preference", "explicit_preference"],
+      evidence: {
+        favorite_genres: ["indie rock", "jazz"],
+        frequent_artists: ["The National", "Nujabes"],
+        playlist_themes: ["late-night coding", "road trip"],
+        discovery_preferences: ["discover new artists"],
+        explicit_preferences: ["clean lyrics"],
+      },
+      sources: [{ title: "Spotify likes" }]
+    }
+  ])
+
+  assert.equal(packets[0].schema_type, "music_preferences")
+  assert.deepEqual(packets[0].attributes.favorite_genres, ["indie rock", "jazz"])
+  assert.deepEqual(packets[0].attributes.frequent_artists, ["The National", "Nujabes"])
+  assert.equal(packets[0].attributes.review_status, "safe_to_propose")
+})
+
+test("music packet flags sensitive signals for review", () => {
+  const packet = createSchemaPacket([
+    {
+      record_id: "m2",
+      category: "music",
+      meaningful_score: 0.8,
+      canonical_themes: ["music", "listening_mood"],
+      evidence: {
+        listening_moods: ["focus"],
+        inferred_mood: "anxiety",
+        mental_health: "stress",
+        politics: "left",
+      },
+      sources: []
+    }
+  ])
+
+  assert.equal(packet.schema_type, "music_preferences")
+  assert.deepEqual(packet.attributes.listening_moods, ["focus"])
+  assert.ok(packet.attributes.sensitive_fields.includes("inferred_mood"))
+  assert.ok(packet.attributes.sensitive_fields.includes("mental_health"))
+  assert.ok(packet.attributes.sensitive_fields.includes("politics"))
+  assert.equal(packet.attributes.review_status, "needs_review")
+})

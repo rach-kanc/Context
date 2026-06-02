@@ -1,0 +1,65 @@
+{
+  "schema_version": "memact.music_examples.v0",
+  "category": "music",
+  "raw_app_context_dumps": [
+    {
+      "app": "spotify",
+      "session_id": "music_001",
+      "signals": {
+        "favorite_genres": ["indie rock", "jazz"],
+        "frequent_artists": ["The National", "Nujabes"],
+        "playlist_themes": ["late-night coding", "road trip"],
+        "discovery_preferences": ["discover new artists"],
+        "explicit_preferences": ["clean lyrics"]
+      }
+    },
+    {
+      "app": "youtube_music",
+      "session_id": "music_002",
+      "signals": {
+        "skipped_artists": ["Artist X"],
+        "disliked_genres": ["heavy metal"],
+        "listening_moods": ["focus"],
+        "inferred_mood": "anxiety"
+      }
+    }
+  ],
+  "normalized_context_examples": [
+    {
+      "schema_type": "music_preferences",
+      "attributes": {
+        "favorite_genres": ["indie rock", "jazz"],
+        "disliked_genres": ["heavy metal"],
+        "frequent_artists": ["The National", "Nujabes"],
+        "skipped_artists": ["Artist X"],
+        "playlist_themes": ["late-night coding", "road trip"],
+        "listening_moods": ["focus"],
+        "discovery_preferences": ["discover new artists"],
+        "explicit_preferences": ["clean lyrics"],
+        "sensitive_fields": ["inferred_mood"],
+        "review_status": "needs_review"
+      }
+    }
+  ],
+  "wiki_entry_templates": [
+    "Likes indie rock and jazz, listens for focus and road trips, and prefers discovering new artists.",
+    "Usually skips heavy metal and prefers clean lyrics."
+  ],
+  "sensitive_fields": [
+    "inferred_mood",
+    "mental_health",
+    "politics",
+    "religion",
+    "sexuality",
+    "gender_identity",
+    "race",
+    "ethnicity"
+  ],
+  "permission_suggestions": [
+    "read playlist metadata",
+    "read liked or saved tracks",
+    "read skipped or blocked artists",
+    "read playback history",
+    "avoid permissions that infer identity or sensitive traits"
+  ]
+}

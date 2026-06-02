@@ -102,6 +102,14 @@ Examples:
 
 For each category, contributors can add context rules, activity examples, context fields, normalization rules, Wiki entry templates, access suggestions, and tests.
 
+For `music`, keep the schema preference-based and reviewable: safe signals include favorite genres, disliked genres, frequent artists, skipped artists, playlist themes, listening moods, discovery preferences, and explicit preferences. Treat inferred identity, mental health, politics, religion, or other sensitive traits as review-only signals, not accepted memory.
+
+See [`examples/music-context-examples.json`](./examples/music-context-examples.json) for raw app input, normalized output, wiki-ready templates, and sensitive-field notes.
+
+Start with [`examples/music-node-example.mjs`](./examples/music-node-example.mjs), a minimal Node.js example with placeholder app id, API key, and connection id values.
+
+API keys must not be used in browser code.
+
 Example: a food app may show repeated sushi orders. Context should describe when that can become a food preference, and when it should stay as temporary activity.
 
 ## Current Code
