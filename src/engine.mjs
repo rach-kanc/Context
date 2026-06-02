@@ -248,6 +248,93 @@ export function createSchemaPacket(group = [], options = {}) {
   }
 }
 
+export function shapeContextProposal(input = {}, options = {}) {
+  const submission = normalizeContextInput(input)
+  const category = submission.category || options.category || "general"
+  const sourceTrail = buildContextSourceTrail(submission)
+  const confidence = submission.kind === "raw_signal" ? 0.35 : sourceTrail.length ? 0.7 : 0.55
+  const context = submission.kind === "raw_signal"
+    ? contextFromSignal(submission)
+    : sanitizeContextObject(submission.context || submission.value || {})
+
+  return {
+    schema_version: "memact.context_proposal.v0",
+    input_kind: submission.kind,
+    category,
+    title: String(submission.title || context.title || `Possible ${category} context`).trim().slice(0, 160),
+    context,
+    confidence: round(Number(submission.confidence ?? confidence)),
+    status: "pending",
+    visibility: "private",
+    user_action_required: true,
+    source_trail: sourceTrail,
+    guardrails: [
+      "Activity is not identity.",
+      "User must be able to accept, edit, reject, or delete this before it becomes memory.",
+      "Do not expose raw private data by default."
+    ],
+    created_at: new Date().toISOString()
+  }
+}
+
+export function shapeContextProposals(inputs = [], options = {}) {
+  return (Array.isArray(inputs) ? inputs : [inputs]).map((input) => shapeContextProposal(input, options))
+}
+
+function normalizeContextInput(input = {}) {
+  const raw = input.raw_signal || input.signal || input.activity_signal
+  if (raw && typeof raw === "object") {
+    return {
+      ...raw,
+      kind: "raw_signal",
+      category: raw.category || input.category
+    }
+  }
+  return {
+    ...input,
+    kind: input.kind || input.input_kind || "context_proposal"
+  }
+}
+
+function contextFromSignal(signal = {}) {
+  const eventType = String(signal.event_type || signal.type || "activity").slice(0, 80)
+  const category = String(signal.category || "general").slice(0, 80)
+  return {
+    title: `Possible ${category} context`,
+    summary: `Raw ${eventType} signal needs review before it becomes memory.`,
+    signal_type: eventType,
+    evidence: sanitizeContextObject(signal.payload || signal.evidence || {}),
+    review_note: "Activity is not identity. Treat this as weak evidence until the user accepts or edits it."
+  }
+}
+
+function buildContextSourceTrail(input = {}) {
+  if (Array.isArray(input.source_trail)) return input.source_trail.slice(0, 20).map(sanitizeContextObject)
+  if (input.kind === "raw_signal") {
+    return [{
+      type: "raw_signal",
+      event_type: String(input.event_type || input.type || "activity").slice(0, 80),
+      evidence: sanitizeContextObject(input.payload || input.evidence || {})
+    }]
+  }
+  if (input.evidence) return [{ type: "app_evidence", evidence: sanitizeContextValue(input.evidence) }]
+  return []
+}
+
+function sanitizeContextObject(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {}
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => !/password|secret|token|api[_-]?key|credential|otp/i.test(key))
+    .map(([key, item]) => [String(key).slice(0, 80), sanitizeContextValue(item)]))
+}
+
+function sanitizeContextValue(value) {
+  if (value === null || value === undefined) return value
+  if (Array.isArray(value)) return value.slice(0, 50).map(sanitizeContextValue)
+  if (typeof value === "object") return sanitizeContextObject(value)
+  return String(value).slice(0, 1000)
+}
+
 function inferSubSchema(records = []) {
   const text = records.map((record) => `${record.source_label || ""} ${record.evidence?.title || ""} ${(record.canonical_themes || []).join(" ")}`).join(" ").toLowerCase()
   if (/summary_detail_preference|summary expanded/.test(text)) return "summary_style_preference"
@@ -290,13 +377,13 @@ function buildReadingAttributes(records = []) {
 
 export function formatSchemaReport(result) {
   const lines = [
-    "Memact Schema Report",
+    "Memact Context Report",
     `Formation mode: ${result.formation_mode || "unknown"}`,
     `Inferred records: ${result.source.inferred_record_count}`,
     `Meaningful records: ${result.source.meaningful_record_count}`,
     `Minimum support: ${result.min_support}`,
     "",
-    "Virtual Cognitive Schemas",
+    "Virtual Context Patterns",
   ];
 
   if (!result.schemas.length) {
