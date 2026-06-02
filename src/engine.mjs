@@ -285,13 +285,13 @@ function buildReadingAttributes(records = []) {
 
 export function formatSchemaReport(result) {
   const lines = [
-    "Memact Schema Report",
+    "Memact Context Report",
     `Formation mode: ${result.formation_mode || "unknown"}`,
     `Inferred records: ${result.source.inferred_record_count}`,
     `Meaningful records: ${result.source.meaningful_record_count}`,
     `Minimum support: ${result.min_support}`,
     "",
-    "Virtual Cognitive Schemas",
+    "Virtual Context Patterns",
   ];
 
   if (!result.schemas.length) {
