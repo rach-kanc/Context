@@ -329,10 +329,11 @@ function buildMusicAttributes(records = []) {
     attributes[spec.output] = collectEvidenceValues(records, spec.aliases)
   }
 
-  const sensitiveFields = unique(records.flatMap((record) => {
+  const sensitiveFieldsRaw = records.flatMap((record) => {
     const evidence = record.evidence || {}
     return Object.keys(evidence).filter((key) => MUSIC_SENSITIVE_KEYS.has(key) && evidence[key] !== undefined && evidence[key] !== null)
-  }))
+  })
+  const sensitiveFields = [...new Set(sensitiveFieldsRaw)]
 
   return {
     ...attributes,
