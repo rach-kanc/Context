@@ -211,14 +211,14 @@ export function inferSchemaType(record = {}) {
   const themes = Array.isArray(record.canonical_themes) ? record.canonical_themes : []
   const text = `${record.category || ""} ${themes.join(" ")} ${record.evidence?.title || ""}`.toLowerCase()
   if (/reading|article|summary|scroll|finish|completion/.test(text)) return "reading_preferences"
-  if (/shop|commerce|product/.test(text)) return "shopping"
+  if (/\b(shopping|shop|commerce|product|products)\b/.test(text)) return "shopping"
   if (/learn|study|tutorial|course/.test(text)) return "learning"
   if (/research|paper|source|documentation|api/.test(text)) return "research"
   if (/focus|attention|load/.test(text)) return "attention"
   if (/video|audio|media/.test(text)) return "media"
   if (/code|developer|debug|github/.test(text)) return "developer_work"
   if (/assistant|chat/.test(text)) return "ai_assistant_usage"
-  if (/task|work|doc/.test(text)) return "productivity"
+  if (/\b(productivity|task|tasks|work|doc|docs)\b/.test(text)) return "productivity"
   if (/prefer|like|choice/.test(text)) return "preferences"
   return "context"
 }
@@ -593,14 +593,14 @@ function profileRecord(record) {
 function inferRecordCategory(record = {}) {
   const text = `${record.category || ""} ${record.source_label || ""} ${record.evidence?.title || ""} ${(record.canonical_themes || []).join(" ")}`.toLowerCase()
   if (/reading|article|summary|scroll|finish/.test(text)) return "reading"
-  if (/shop|commerce|product|discount|price/.test(text)) return "shopping"
+  if (/\b(shopping|shop|commerce|product|products|discount|price)\b/.test(text)) return "shopping"
   if (/learn|study|tutorial|course/.test(text)) return "learning"
   if (/research|paper|source|documentation|api/.test(text)) return "research"
   if (/focus|attention|load/.test(text)) return "attention"
   if (/video|audio|media/.test(text)) return "media"
   if (/code|developer|debug|github/.test(text)) return "developer_work"
   if (/assistant|chat/.test(text)) return "ai_assistant_usage"
-  if (/task|work|doc/.test(text)) return "productivity"
+  if (/\b(productivity|task|tasks|work|doc|docs)\b/.test(text)) return "productivity"
   if (/prefer|like|choice/.test(text)) return "preferences"
   return "general"
 }
