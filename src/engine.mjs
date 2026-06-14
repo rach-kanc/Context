@@ -1,5 +1,7 @@
 import { resolveSchemaLifecycleState, schemaLifecycleLabel } from "./lifecycle.mjs";
 import { buildProductivityAttributes, inferProductivitySubSchema } from "./categories/productivity.mjs";
+export { buildMissingContextFields, contextGoalTemplates, groupContextEntry, suggestContextGoal } from "./context-goals.mjs";
+export { LocalContextMatcher, SemanticContextMatcher, createContextMatcher, matchContextFields } from "./context-matcher.mjs";
 
 const DEFAULT_MIN_SUPPORT = 3;
 const DEFAULT_MIN_MEANINGFUL_SCORE = 0.38;
@@ -251,6 +253,7 @@ export function inferSchemaType(record = {}) {
   if (/code|developer|debug|github/.test(text)) return "developer_work"
   if (/assistant|chat/.test(text)) return "ai_assistant_usage"
   if (/\b(productivity|task|tasks|work|doc|docs)\b/.test(text)) return "productivity"
+  if (/fitness|workout|nutrition|diet|exercise/.test(text)) return "fitness"
   if (/prefer|like|choice/.test(text)) return "preferences"
   return "context"
 }
@@ -695,6 +698,7 @@ function inferRecordCategory(record = {}) {
   if (/code|developer|debug|github/.test(text)) return "developer_work"
   if (/assistant|chat/.test(text)) return "ai_assistant_usage"
   if (/\b(productivity|task|tasks|work|doc|docs)\b/.test(text)) return "productivity"
+  if (/fitness|workout|nutrition|diet|exercise/.test(text)) return "fitness"
   if (/prefer|like|choice/.test(text)) return "preferences"
   return "general"
 }

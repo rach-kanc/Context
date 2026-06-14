@@ -1,0 +1,22 @@
+[
+  {
+    "id": "wiki_learning_preferences",
+    "type": "preference",
+    "sub_type": "learning_style",
+    "proposed_text": "You tend to learn best with quiz content, preferring example-first explanations.",
+    "raw_source_summary": "Derived from repeated learning interaction patterns and explicit study settings.",
+    "confidence": 0.84,
+    "requires_user_confirmation": false,
+    "actions": ["approve", "edit", "reject", "delete"]
+  },
+  {
+    "id": "wiki_learning_goal_react_hooks",
+    "type": "goal",
+    "sub_type": "active_learning_goal",
+    "proposed_text": "You're currently working through **React hooks**. You've completed 0 lessons so far and have been on a 5-day streak.",
+    "raw_source_summary": "Summarized from the current active topics, goal statements, and visible progress signals.",
+    "confidence": 0.8,
+    "requires_user_confirmation": false,
+    "actions": ["approve", "edit", "reject", "delete"]
+  }
+]

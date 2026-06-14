@@ -1,0 +1,24 @@
+[
+  {
+    "user_id": "u_123",
+    "topics_viewed": ["React hooks", "useEffect", "closures"],
+    "quiz_scores": {
+      "closures": 0.4,
+      "useEffect": 0.9
+    },
+    "failed_cards": ["closure scope", "stale closures"],
+    "streak": 5,
+    "last_session_duration_mins": 22,
+    "preferred_card_type": "code-snippet",
+    "badge": "struggling-with-closures"
+  },
+  {
+    "user_id": "u_123",
+    "completed_videos": ["intro-to-sql", "joins-explained"],
+    "rewatched": ["joins-explained"],
+    "speed_setting": 1.5,
+    "enrolled_courses": ["SQL Mastery", "Data Eng Bootcamp"],
+    "dropout_risk_score": 0.7,
+    "next_recommended": "window-functions"
+  }
+]

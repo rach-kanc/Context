@@ -1,0 +1,31 @@
+[
+  {
+    "category": "learning",
+    "stable_preferences": {
+      "preferred_format": "quiz",
+      "explanation_style": "example-first"
+    },
+    "current_goals": {
+      "active_topics": ["React hooks", "closures"],
+      "current_difficulty": {
+        "closures": "intermediate"
+      },
+      "session_streak": 5
+    },
+    "dropped_fields": ["badge", "failed_cards"],
+    "drop_reason": "Overconfident permanent labels. Retained as ephemeral signals only if user approves Wiki entry."
+  },
+  {
+    "category": "learning",
+    "stable_preferences": {
+      "preferred_pace": "fast",
+      "preferred_format": "video"
+    },
+    "current_goals": {
+      "active_topics": ["SQL", "Data Engineering"],
+      "completed_lessons": ["intro-to-sql", "joins-explained"]
+    },
+    "dropped_fields": ["dropout_risk_score"],
+    "drop_reason": "Model inference about user risk not surfaced to user without explicit consent."
+  }
+]
