@@ -16,6 +16,7 @@ test("travel - explicit preferences preserve non-sensitive fields", () => {
   const result = normalizeTravelContext(rawInput);
   assert.equal(result.category, "travel");
   assert.equal(result.confidence, "high");
+  assert.equal(result.visibility, "private");
   assert.equal(result.preferences.tripStyle, "backpacking");
 });
 
