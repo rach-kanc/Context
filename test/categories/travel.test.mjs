@@ -1,4 +1,5 @@
 import assert from 'assert';
+import { describe, it } from 'node:test';
 import { normalizeTravelContext, generateUserReadableSuggestion } from '../../src/categories/travel.mjs';
 
 describe('Travel Category Normalization', () => {
