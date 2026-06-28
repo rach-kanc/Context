@@ -301,16 +301,29 @@ export function shapeContextProposal(input = {}, options = {}) {
     title: String(submission.title || context.title || `Possible ${category} context`).trim().slice(0, 160),
     context,
     confidence: round(Number(submission.confidence ?? confidence)),
+    
+    // NEW: Robust Claim Lifecycle Base State
     status: "pending",
     visibility: "private",
+    revoked_at: null,
+    lifecycle_history: [{
+      action: "created",
+      from_status: null,
+      to_status: "pending",
+      occurred_at: new Date().toISOString(),
+      reason: "system_generated"
+    }],
+
     user_action_required: true,
     source_trail: sourceTrail,
     guardrails: [
       "Activity is not identity.",
       "User must be able to accept, edit, reject, or delete this before it becomes memory.",
-      "Do not expose raw private data by default."
+      "Do not expose raw private data by default.",
+      "Every user decision is reversible. Hidden or rejected claims retain local privacy state."
     ],
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
 }
 
