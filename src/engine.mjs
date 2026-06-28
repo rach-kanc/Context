@@ -254,6 +254,7 @@ export function inferSchemaType(record = {}) {
   if (/assistant|chat/.test(text)) return "ai_assistant_usage"
   if (/\b(productivity|task|tasks|work|doc|docs)\b/.test(text)) return "productivity"
   if (/fitness|workout|nutrition|diet|exercise/.test(text)) return "fitness"
+  if (/\b(language|spanish|japanese|french|german|duolingo|vocabulary|fluent)\b/.test(text)) return "language_learning_preferences"
   if (/prefer|like|choice/.test(text)) return "preferences"
   return "context"
 }
@@ -700,6 +701,7 @@ function inferRecordCategory(record = {}) {
   if (/\b(productivity|task|tasks|work|doc|docs)\b/.test(text)) return "productivity"
   if (/fitness|workout|nutrition|diet|exercise/.test(text)) return "fitness"
   if (/prefer|like|choice/.test(text)) return "preferences"
+  if (/\b(language|spanish|japanese|french|german|duolingo|vocabulary|fluent)\b/.test(text)) return "language_learning"
   return "general"
 }
 
