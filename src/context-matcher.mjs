@@ -1,4 +1,7 @@
+import { createHash } from "node:crypto";
+
 const STOP_WORDS = new Set(["a", "an", "and", "app", "can", "for", "from", "get", "of", "the", "to", "use", "user", "with"])
+const HIGH_SENSITIVITY_PREFIXES = ["identity", "diet.allergy"];
 
 export const contextMatchingExamples = Object.freeze([
   {
@@ -264,9 +267,11 @@ export function matchContextFields(requestedContext = [], memoryRecords = [], op
   return (Array.isArray(requestedContext) ? requestedContext : []).map((requestedItem) => {
     const requestText = requestToText(requestedItem)
     const requestTokens = tokens(requestText)
+    const requestedCategory = requestedItem?.category || requestedItem?.category_hint || null
+
     const synonymFields = SYNONYM_FIELDS[normalize(requestText)] || SYNONYM_FIELDS[normalize(requestedItem?.description)] || []
     const candidates = (Array.isArray(memoryRecords) ? memoryRecords : [])
-      .map((memory) => scoreMemory(requestTokens, synonymFields, memory))
+      .map((memory) => scoreMemory(requestTokens, synonymFields, memory, requestedCategory))
       .filter((candidate) => candidate.score >= threshold)
       .sort((left, right) => right.score - left.score || String(left.memory.field_path || "").localeCompare(String(right.memory.field_path || "")))
     return {
@@ -277,24 +282,39 @@ export function matchContextFields(requestedContext = [], memoryRecords = [], op
   })
 }
 
-function scoreMemory(requestTokens, synonymFields, memory = {}) {
+/**
+ * Local cryptographic helper utility to mask private PII strings before scoring execution passes
+ */
+export function anonymizePrivateIdentities(text = "") {
+  const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  return String(text).replace(EMAIL_PATTERN, (match) => {
+    return "anon_" + createHash("sha256").update(match.toLowerCase().trim()).digest("hex").slice(0, 12);
+  });
+}
+
+function scoreMemory(requestTokens, synonymFields, memory = {}, requestedCategory = null) {
   const fieldPath = String(memory.field_path || memory.path || "")
+  
+  // Protect and tokenize personal information before creating searchable context blocks
+  const rawValue = String(memory.value || "")
+  const protectedValue = anonymizePrivateIdentities(rawValue)
+
   const searchable = [
     fieldPath,
     memory.category,
     memory.label,
     memory.title,
     memory.summary,
-    memory.value,
+    protectedValue,
     ...(memory.themes || [])
   ].join(" ")
+  
   const candidateTokens = tokens(searchable)
   let overlap = 0
   for (const token of requestTokens) {
     if (candidateTokens.has(token)) {
       overlap += 1
     } else {
-      // Fuzzy match checkpoint: check if similar token exists in candidate
       let bestFuzzy = 0
       for (const candToken of candidateTokens) {
         const sim = jaroWinkler(token, candToken)
@@ -308,15 +328,48 @@ function scoreMemory(requestTokens, synonymFields, memory = {}) {
   const lexical = requestTokens.size ? overlap / requestTokens.size : 0
   const fieldPathSimilarity = pathSimilarity(fieldPath, [...requestTokens].join("."))
   const synonymBoost = synonymFields.includes(fieldPath) ? 0.78 : 0
-  const score = round(Math.max(lexical, fieldPathSimilarity, synonymBoost))
+  
+  // --- Contradiction Resolution Logic for Overlapping Claim Classes ---
+  let crossDomainRelevance = 0
+  const relevanceReasons = []
+  
+  if (requestedCategory && memory.category) {
+    const normReqCat = String(requestedCategory).toLowerCase().trim()
+    const normMemCat = String(memory.category).toLowerCase().trim()
+    
+    if (normReqCat === normMemCat) {
+      // Prioritize active short-term target intent category with a baseline boost
+      crossDomainRelevance = 0.15
+      relevanceReasons.push("active context match")
+      
+      // If an explicit intent signal overrides a conflicting passive record layout
+      if (memory.scope === "temporary_intent") {
+        crossDomainRelevance += 0.25
+        relevanceReasons.push("intent priority override")
+      }
+    } else if (memory.scope === "temporary_intent") {
+      // Deprioritize out-of-domain transient traits to prevent leakage across modules
+      crossDomainRelevance = -0.30
+    }
+  }
+
+  const score = round(Math.max(0, Math.min(1, Math.max(lexical, fieldPathSimilarity, synonymBoost) + crossDomainRelevance)))
+  
   const reasons = []
   if (synonymBoost) reasons.push("example mapping")
   if (lexical) reasons.push("keyword overlap")
   if (fieldPathSimilarity) reasons.push("field path similarity")
+  if (crossDomainRelevance > 0) reasons.push(...relevanceReasons)
+
+  const isHighSensitivity = HIGH_SENSITIVITY_PREFIXES.some(prefix => fieldPath.startsWith(prefix));
+  const sensitivity = isHighSensitivity ? "high" : "low";
+
   return {
     memory,
     score,
-    reasons: reasons.length ? reasons : ["weak fallback match"]
+    reasons: reasons.length ? reasons : ["weak fallback match"],
+    sensitivity,
+    requires_approval: sensitivity === "high"
   }
 }
 
@@ -344,7 +397,6 @@ function pathSimilarity(left = "", right = "") {
     if (rightSet.has(part)) {
       overlap += 1
     } else {
-      // Fuzzy match path part
       let bestFuzzy = 0
       for (const rPart of rightParts) {
         const sim = jaroWinkler(part, rPart)

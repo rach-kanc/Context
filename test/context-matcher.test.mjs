@@ -68,3 +68,34 @@ test("context matcher utilizes expanded synonym mappings", () => {
   assert.equal(result2[0].candidates[0].memory.field_path, "shopping.laptop.budget")
 })
 
+test("context matcher resolves domain contradictions by boosting active category intents", () => {
+  const result = matchContextFields([
+    { 
+      description: "travel arrangements and lodging options", 
+      category: "travel" // 🧠 Active target intent domain
+    }
+  ], [
+    { 
+      field_path: "travel.destination", 
+      value: "Paris", 
+      category: "travel", 
+      scope: "temporary_intent" 
+    },
+    { 
+      field_path: "fitness.regimen", 
+      value: "Gym Workout", 
+      category: "fitness", 
+      scope: "temporary_intent" 
+    }
+  ])
+
+  const candidates = result[0].candidates;
+
+  // 👇 Add this line inside the new test block right before the assertions
+  console.log("DEMO RESOLUTION REASONS:", candidates[0].reasons);
+
+  assert.ok(candidates.length > 0);
+  // Verify that the travel-scoped temporary intent overrides the competing fitness record
+  assert.equal(candidates[0].memory.field_path, "travel.destination");
+  assert.ok(candidates[0].reasons.includes("intent priority override"));
+})
