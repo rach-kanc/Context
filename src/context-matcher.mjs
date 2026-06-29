@@ -264,6 +264,8 @@ export function createContextMatcher(options = {}) {
 
 export function matchContextFields(requestedContext = [], memoryRecords = [], options = {}) {
   const threshold = Number(options.threshold ?? 0.12)
+  const requestedCategory = options.requestedCategory || null; // NEW
+
   return (Array.isArray(requestedContext) ? requestedContext : []).map((requestedItem) => {
     const requestText = requestToText(requestedItem)
     const requestTokens = tokens(requestText)
@@ -271,6 +273,7 @@ export function matchContextFields(requestedContext = [], memoryRecords = [], op
 
     const synonymFields = SYNONYM_FIELDS[normalize(requestText)] || SYNONYM_FIELDS[normalize(requestedItem?.description)] || []
     const candidates = (Array.isArray(memoryRecords) ? memoryRecords : [])
+      // Pass requestedCategory downwards
       .map((memory) => scoreMemory(requestTokens, synonymFields, memory, requestedCategory))
       .filter((candidate) => candidate.score >= threshold)
       .sort((left, right) => right.score - left.score || String(left.memory.field_path || "").localeCompare(String(right.memory.field_path || "")))
@@ -325,6 +328,7 @@ function scoreMemory(requestTokens, synonymFields, memory = {}, requestedCategor
       }
     }
   }
+
   const lexical = requestTokens.size ? overlap / requestTokens.size : 0
   const fieldPathSimilarity = pathSimilarity(fieldPath, [...requestTokens].join("."))
   const synonymBoost = synonymFields.includes(fieldPath) ? 0.78 : 0
@@ -361,7 +365,10 @@ function scoreMemory(requestTokens, synonymFields, memory = {}, requestedCategor
   if (fieldPathSimilarity) reasons.push("field path similarity")
   if (crossDomainRelevance > 0) reasons.push(...relevanceReasons)
 
-  const isHighSensitivity = HIGH_SENSITIVITY_PREFIXES.some(prefix => fieldPath.startsWith(prefix));
+  const isHighSensitivity = HIGH_SENSITIVITY_PREFIXES.some(prefix => 
+    fieldPath.startsWith(prefix)
+  );
+
   const sensitivity = isHighSensitivity ? "high" : "low";
 
   return {
@@ -369,7 +376,7 @@ function scoreMemory(requestTokens, synonymFields, memory = {}, requestedCategor
     score,
     reasons: reasons.length ? reasons : ["weak fallback match"],
     sensitivity,
-    requires_approval: sensitivity === "high"
+    requires_approval: sensitivity === "high" 
   }
 }
 
