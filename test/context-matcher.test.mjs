@@ -70,7 +70,6 @@ test("context matcher utilizes expanded synonym mappings", () => {
 
 test("context matcher prunes low confidence candidate features early", () => {
   const result = matchContextFields([
-    // 🧠 Fixed: changed to 'allergies' to ensure an exact synonym/keyword match pass
     { description: "food allergies" }
   ], [
     { field_path: "diet.preference", value: "vegan", category: "diet", confidence: 0.1 }, // Prune (< 0.2)
@@ -83,4 +82,35 @@ test("context matcher prunes low confidence candidate features early", () => {
   
   assert.equal(candidates.length, 1);
   assert.equal(candidates[0].memory.field_path, "diet.allergy");
+});
+
+test("context matcher injects sensitivity and approval flags based on prefix namespaces", () => {
+  const result = matchContextFields([
+    { description: "user preferences profile configuration" }
+  ], [
+    { field_path: "identity.preferred_name", value: "Alex", category: "identity" },
+    { field_path: "diet.allergy", value: "Peanuts", category: "diet" },
+    { field_path: "shopping.budget", value: "Medium", category: "shopping" }
+  ])
+
+  const candidates = result[0].candidates;
+
+  const identityCandidate = candidates.find(c => c.memory.field_path === "identity.preferred_name");
+  const allergyCandidate = candidates.find(c => c.memory.field_path === "diet.allergy");
+  const shoppingCandidate = candidates.find(c => c.memory.field_path === "shopping.budget");
+
+  if (identityCandidate) {
+    assert.equal(identityCandidate.sensitivity, "high");
+    assert.equal(identityCandidate.requires_approval, true);
+  }
+
+  if (allergyCandidate) {
+    assert.equal(allergyCandidate.sensitivity, "high");
+    assert.equal(allergyCandidate.requires_approval, true);
+  }
+
+  if (shoppingCandidate) {
+    assert.equal(shoppingCandidate.sensitivity, "low");
+    assert.equal(shoppingCandidate.requires_approval, false);
+  }
 })

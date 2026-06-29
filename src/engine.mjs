@@ -1,5 +1,4 @@
 import { resolveSchemaLifecycleState, schemaLifecycleLabel } from "./lifecycle.mjs";
-import { buildProductivityAttributes, inferProductivitySubSchema } from "./categories/productivity.mjs";
 export { buildMissingContextFields, contextGoalTemplates, groupContextEntry, suggestContextGoal } from "./context-goals.mjs";
 export { LocalContextMatcher, SemanticContextMatcher, createContextMatcher, matchContextFields } from "./context-matcher.mjs";
 
@@ -254,6 +253,9 @@ export function inferSchemaType(record = {}) {
   if (/assistant|chat/.test(text)) return "ai_assistant_usage"
   if (/\b(productivity|task|tasks|work|doc|docs)\b/.test(text)) return "productivity"
   if (/fitness|workout|nutrition|diet|exercise/.test(text)) return "fitness"
+  if (/\b(language|spanish|japanese|french|german|duolingo|vocabulary|fluent)\b/.test(text)) return "language_learning_preferences"
+  if (/\b(game|gaming|play|rpg|mmo|console|steam|xbox|playstation)\b/.test(text)) return "gaming_preferences"
+  if (/\b(smart home|thermostat|lighting|automation|bulb|temperature)\b/.test(text)) return "smart_home_preferences"
   if (/prefer|like|choice/.test(text)) return "preferences"
   return "context"
 }
@@ -301,16 +303,29 @@ export function shapeContextProposal(input = {}, options = {}) {
     title: String(submission.title || context.title || `Possible ${category} context`).trim().slice(0, 160),
     context,
     confidence: round(Number(submission.confidence ?? confidence)),
+    
+    // NEW: Robust Claim Lifecycle Base State
     status: "pending",
     visibility: "private",
+    revoked_at: null,
+    lifecycle_history: [{
+      action: "created",
+      from_status: null,
+      to_status: "pending",
+      occurred_at: new Date().toISOString(),
+      reason: "system_generated"
+    }],
+
     user_action_required: true,
     source_trail: sourceTrail,
     guardrails: [
       "Activity is not identity.",
       "User must be able to accept, edit, reject, or delete this before it becomes memory.",
-      "Do not expose raw private data by default."
+      "Do not expose raw private data by default.",
+      "Every user decision is reversible. Hidden or rejected claims retain local privacy state."
     ],
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
 }
 
@@ -392,6 +407,25 @@ function inferSubSchema(records = []) {
   const productivitySubSchema = inferProductivitySubSchema(text)
   if (productivitySubSchema) return productivitySubSchema
   return "general"
+}
+
+function inferProductivitySubSchema(text = "") {
+  if (/kanban|time-blocking|organization/.test(text)) return "organization_style"
+  if (/calendar|meeting/.test(text)) return "calendar_habits"
+  return null
+}
+
+function buildProductivityAttributes(records = []) {
+  const styles = unique(records.map((record) => record.evidence?.organization_style).filter(Boolean))
+  const projectAreas = unique(records.map((record) => record.evidence?.project_area).filter(Boolean))
+  const focusPreferences = unique(records.map((record) => record.evidence?.focus_preference).filter(Boolean))
+  const calendarHabits = unique(records.map((record) => record.evidence?.calendar_habit).filter(Boolean))
+  return {
+    preferred_organization_styles: styles,
+    recurring_project_areas: projectAreas,
+    focus_time_preferences: focusPreferences,
+    calendar_habits: calendarHabits
+  }
 }
 
 function buildReadingAttributes(records = []) {
@@ -699,7 +733,10 @@ function inferRecordCategory(record = {}) {
   if (/assistant|chat/.test(text)) return "ai_assistant_usage"
   if (/\b(productivity|task|tasks|work|doc|docs)\b/.test(text)) return "productivity"
   if (/fitness|workout|nutrition|diet|exercise/.test(text)) return "fitness"
+  if (/\b(game|gaming|play|rpg|mmo|console|steam|xbox|playstation)\b/.test(text)) return "gaming"
+  if (/\b(smart home|thermostat|lighting|automation|bulb|temperature)\b/.test(text)) return "smart_home"
   if (/prefer|like|choice/.test(text)) return "preferences"
+  if (/\b(language|spanish|japanese|french|german|duolingo|vocabulary|fluent)\b/.test(text)) return "language_learning"
   return "general"
 }
 
